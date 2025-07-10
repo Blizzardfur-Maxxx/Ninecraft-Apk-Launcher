@@ -8,22 +8,25 @@ namespace NinecraftApkLauncher
 {
     public class MainForm : Form
     {
-        private const string ApkDir = "apks";
+        private string apkDir = null;
+        private const string ConfigFile = "config.cfg";
         private const string Executable = "ninecraft.exe";
 
         private ComboBox combo;
         private Button launchButton;
+        private Button browseButton;
 
         public MainForm()
         {
             InitializeComponents();
+            LoadConfig();
             RefreshFolders();
         }
 
         private void InitializeComponents()
         {
             this.Text = "Ninecraft APK Launcher";
-            this.ClientSize = new System.Drawing.Size(400, 150);
+            this.ClientSize = new System.Drawing.Size(400, 140);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
 
@@ -43,6 +46,15 @@ namespace NinecraftApkLauncher
             };
             this.Controls.Add(combo);
 
+            browseButton = new Button()
+            {
+                Text = "Browse...",
+                Location = new System.Drawing.Point(130, 90),
+                Width = 100
+            };
+            browseButton.Click += BrowseButton_Click;
+            this.Controls.Add(browseButton);
+
             launchButton = new Button()
             {
                 Text = "Launch",
@@ -53,14 +65,39 @@ namespace NinecraftApkLauncher
             this.Controls.Add(launchButton);
         }
 
+        private void LoadConfig()
+        {
+            if (File.Exists(ConfigFile))
+            {
+                string path = File.ReadAllText(ConfigFile).Trim();
+                if (Directory.Exists(path))
+                {
+                    apkDir = path;
+                }
+            }
+
+            if (apkDir == null)
+            {
+                MessageBox.Show("Please select a folder containing APK subfolders.", "No folder selected", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void SaveConfig()
+        {
+            if (!string.IsNullOrEmpty(apkDir))
+            {
+                File.WriteAllText(ConfigFile, apkDir);
+            }
+        }
+
         private void RefreshFolders()
         {
             combo.Items.Clear();
 
-            if (!Directory.Exists(ApkDir))
+            if (string.IsNullOrEmpty(apkDir) || !Directory.Exists(apkDir))
                 return;
 
-            var directories = Directory.GetDirectories(ApkDir)
+            var directories = Directory.GetDirectories(apkDir)
                                        .Select(Path.GetFileName)
                                        .ToArray();
 
@@ -70,16 +107,31 @@ namespace NinecraftApkLauncher
                 combo.SelectedIndex = 0;
         }
 
+        private void BrowseButton_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Select the folder containing extracted APK directories";
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    apkDir = dialog.SelectedPath;
+                    SaveConfig();
+                    RefreshFolders();
+                }
+            }
+        }
+
         private void LaunchButton_Click(object sender, EventArgs e)
         {
-            if (combo.SelectedItem == null)
+            if (string.IsNullOrEmpty(apkDir) || combo.SelectedItem == null)
             {
                 MessageBox.Show("Please select a folder.", "No selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             string selectedFolder = combo.SelectedItem.ToString();
-            string gamePath = Path.Combine(ApkDir, selectedFolder);
+            string gamePath = Path.Combine(apkDir, selectedFolder);
 
             var startInfo = new ProcessStartInfo()
             {
