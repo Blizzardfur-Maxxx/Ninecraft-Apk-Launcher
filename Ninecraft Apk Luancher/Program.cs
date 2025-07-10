@@ -63,6 +63,15 @@ namespace NinecraftApkLauncher
             };
             launchButton.Click += LaunchButton_Click;
             this.Controls.Add(launchButton);
+            var optionsButton = new Button()
+            {
+                Text = "Options",
+                Location = new System.Drawing.Point(240, 90),
+                Width = 100
+            };
+            optionsButton.Click += OptionsButton_Click;
+            this.Controls.Add(optionsButton);
+
         }
 
         private void LoadConfig()
@@ -161,6 +170,24 @@ namespace NinecraftApkLauncher
                 MessageBox.Show($"Failed to run the command:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void OptionsButton_Click(object sender, EventArgs e)
+        {
+            string exeDir = AppDomain.CurrentDomain.BaseDirectory;
+            string optionsPath = Path.Combine(exeDir, "options.txt");
+
+            if (!File.Exists(optionsPath))
+            {
+                MessageBox.Show("options.txt not found next to the executable.", "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var optionsForm = new OptionsForm(optionsPath))
+            {
+                optionsForm.ShowDialog();
+            }
+        }
+
 
         [STAThread]
         public static void Main()
